@@ -9,7 +9,7 @@ os.makedirs('logs', exist_ok=True)
 # Configure logging to write to both console and file
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s',
     handlers=[
         logging.FileHandler('logs/division_api.log'),
         logging.StreamHandler()  # This keeps console logging
@@ -42,6 +42,7 @@ def divide_numbers():
         data = request.get_json()
         
         if not data:
+            logger.warning("No JSON data provided in request")
             return jsonify({
                 "error": "No JSON data provided",
                 "message": "Please provide numerator and denominator in JSON format"
@@ -53,6 +54,7 @@ def divide_numbers():
         
         # Validate input
         if numerator is None or denominator is None:
+            logger.warning(f"Missing required fields in request: numerator={numerator}, denominator={denominator}")
             return jsonify({
                 "error": "Missing required fields",
                 "message": "Both 'numerator' and 'denominator' are required"
@@ -62,18 +64,13 @@ def divide_numbers():
         try:
             numerator = float(numerator)
             denominator = float(denominator)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid input type: numerator={numerator} (type: {type(numerator)}), denominator={denominator} (type: {type(denominator)})")
             return jsonify({
                 "error": "Invalid input type",
                 "message": "Both numerator and denominator must be numbers"
             }), 400
         
-        # Check for division by zero
-        if denominator == 0:
-            return jsonify({
-                "error": "Division by zero",
-                "message": "Denominator cannot be zero"
-            }), 400
         
         # Perform division
         result = numerator / denominator
@@ -89,7 +86,10 @@ def divide_numbers():
         }), 200
         
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
         logger.error(f"Unexpected error: {str(e)}")
+        logger.error(f"Stack trace:\n{error_traceback}")
         return jsonify({
             "error": "Internal server error",
             "message": "An unexpected error occurred"
