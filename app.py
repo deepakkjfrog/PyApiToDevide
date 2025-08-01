@@ -73,7 +73,9 @@ def divide_numbers():
         
         
         # Perform division
-        result = numerator / denominator
+        if denominator == 0:
+    raise ValueError('Division by zero is not allowed')
+result = numerator / denominator
         
         # Log the operation
         logger.info(f"Division operation: {numerator} / {denominator} = {result}")
